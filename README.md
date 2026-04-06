@@ -1,2 +1,4 @@
-# epp-sla-dashboard-
-EPP SLA Dashboard multipurpose supports anomaly detection in Lags and Text 2 SQL Interface  
+# epp-sla-dashboard
+EPP SLA Multipupose Dashboard  
+  supports anomaly detection in hourly aggregated logs 
+  Text 2 SQL Interface  
