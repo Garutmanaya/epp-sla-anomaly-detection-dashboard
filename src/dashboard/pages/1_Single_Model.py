@@ -3,6 +3,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboard.components.inference_selector import render_inference_transport_selector
+from dashboard.theme import apply_theme, initialize_theme_state, style_plotly_figure
 from dashboard.utils.api_client import call_inference
 from dashboard.utils.dataframe_utils import build_inference_payload, load_uploaded_csv
 from shared.data_dictionary import COMMAND_OPTIONS, MODEL_OPTIONS, NORMAL_STATUS, STATUS_OPTIONS
@@ -22,6 +23,8 @@ def init_state() -> None:
 
 
 init_state()
+initialize_theme_state()
+apply_theme()
 
 st.subheader("🚨 Single Model Inference & Analysis")
 
@@ -128,7 +131,7 @@ ts = ts[ts["Status"] != NORMAL_STATUS].groupby("Timestamp").size().reset_index(n
 
 if not ts.empty:
     fig = px.line(ts, x="Timestamp", y="alerts", markers=True)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(style_plotly_figure(fig), width="stretch")
 else:
     st.info("No alerts detected")
 
@@ -137,21 +140,21 @@ if not alerts_df.empty:
     root_causes = alerts_df["Root_Cause"].value_counts().reset_index()
     root_causes.columns = ["Root_Cause", "Count"]
     fig = px.bar(root_causes, x="Root_Cause", y="Count")
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(style_plotly_figure(fig), width="stretch")
 else:
     st.info("No anomalies")
 
 st.subheader("⚠️ Severity Distribution")
 if not alerts_df.empty:
     fig = px.histogram(alerts_df, x="Severity", nbins=30)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(style_plotly_figure(fig), width="stretch")
 
 st.subheader("🧩 Alerts by Command")
 if not alerts_df.empty:
     command_counts = alerts_df["Command"].value_counts().reset_index()
     command_counts.columns = ["Command", "Count"]
     fig = px.bar(command_counts, x="Command", y="Count")
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(style_plotly_figure(fig), width="stretch")
 
 st.subheader("🚨 Alerts")
 st.dataframe(alerts_df.sort_values("Severity", ascending=False), width="stretch")

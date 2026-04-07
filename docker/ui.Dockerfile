@@ -45,4 +45,5 @@ CMD ["streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server
 # docker build -f docker/ui.Dockerfile -t epp-sla-hourly-anomaly-dashboard .
 # run
 # docker run -it  -p 8501:8501 epp-sla-hourly-anomaly-dashboard:latest
+# docker run -it -e API_BASE_URL=http://endpoint:8000/ -p 8501:8501 epp-sla-hourly-anomaly-dashboard:latest 
 #=====================================================================================

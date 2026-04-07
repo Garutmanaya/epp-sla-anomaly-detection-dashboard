@@ -6,6 +6,7 @@ from dashboard.settings import (
     get_inference_settings,
     get_transport_label,
 )
+from dashboard.theme import render_theme_selector
 
 
 def get_selected_transport() -> str:
@@ -41,5 +42,8 @@ def render_inference_transport_selector() -> str:
             )
         else:
             st.sidebar.warning("Set SAGEMAKER_ENDPOINT_NAME to use direct SageMaker mode.")
+
+    st.sidebar.divider()
+    render_theme_selector()
 
     return selected_transport

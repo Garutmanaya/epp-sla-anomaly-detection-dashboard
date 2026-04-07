@@ -3,6 +3,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboard.settings import get_mlflow_settings
+from dashboard.theme import apply_theme, initialize_theme_state, render_theme_selector, style_plotly_figure
 from dashboard.utils.mlflow_client import (
     build_recent_runs_table,
     clear_cached_mlflow_data,
@@ -11,6 +12,9 @@ from dashboard.utils.mlflow_client import (
     get_metric_columns,
     prepare_runs_dataframe,
 )
+
+initialize_theme_state()
+apply_theme()
 
 
 def _get_default_experiments(experiments_df, default_name: str) -> list[str]:
@@ -149,6 +153,9 @@ max_runs = st.sidebar.slider("Max Runs", min_value=25, max_value=1000, value=set
 if st.sidebar.button("Refresh MLflow Data", key="refresh_mlflow"):
     clear_cached_mlflow_data()
 
+st.sidebar.divider()
+render_theme_selector()
+
 try:
     experiments_df = fetch_experiments(tracking_uri)
 except Exception as exc:
@@ -236,7 +243,7 @@ model_mix_fig = px.bar(
     y=["finished_runs", "failed_runs"],
     barmode="group",
 )
-st.plotly_chart(model_mix_fig, width="stretch")
+st.plotly_chart(style_plotly_figure(model_mix_fig), width="stretch")
 
 st.divider()
 
@@ -247,7 +254,7 @@ st.dataframe(stage_summary_df, width="stretch")
 stage_duration_df = stage_summary_df.dropna(subset=["avg_duration_seconds"])
 if not stage_duration_df.empty:
     stage_duration_fig = px.bar(stage_duration_df, x="run_stage", y="avg_duration_seconds", color="run_stage")
-    st.plotly_chart(stage_duration_fig, width="stretch")
+    st.plotly_chart(style_plotly_figure(stage_duration_fig), width="stretch")
 
 st.divider()
 
@@ -274,7 +281,7 @@ run_mix_fig = px.bar(
     color="model_family",
     barmode="group",
 )
-st.plotly_chart(run_mix_fig, width="stretch")
+st.plotly_chart(style_plotly_figure(run_mix_fig), width="stretch")
 
 left_col, right_col = st.columns(2)
 
@@ -352,7 +359,7 @@ else:
             symbol="run_stage",
             hover_data=["run_name", "version", "status", "experiment_name"],
         )
-        st.plotly_chart(trend_fig, width="stretch")
+        st.plotly_chart(style_plotly_figure(trend_fig), width="stretch")
 
 st.divider()
 

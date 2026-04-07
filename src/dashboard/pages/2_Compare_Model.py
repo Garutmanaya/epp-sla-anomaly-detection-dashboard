@@ -3,6 +3,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboard.components.inference_selector import render_inference_transport_selector
+from dashboard.theme import apply_theme, initialize_theme_state, style_plotly_figure
 from dashboard.utils.api_client import call_inference
 from dashboard.utils.dataframe_utils import (
     add_alert_flags,
@@ -27,6 +28,8 @@ def init_state() -> None:
 
 
 init_state()
+initialize_theme_state()
+apply_theme()
 
 st.subheader("🧠 Advanced Model Comparison")
 
@@ -156,7 +159,7 @@ overlap_df = pd.DataFrame(
     }
 )
 fig = px.bar(overlap_df, x="Category", y="Count")
-st.plotly_chart(fig, width="stretch")
+st.plotly_chart(style_plotly_figure(fig), width="stretch")
 
 st.divider()
 
@@ -174,7 +177,7 @@ if timeseries_frames:
     ts_df = pd.concat(timeseries_frames, ignore_index=True)
     if not ts_df.empty:
         fig = px.line(ts_df, x="Timestamp", y="alerts", color="model")
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(style_plotly_figure(fig), width="stretch")
     else:
         st.info("No alerts detected across the selected models.")
 
@@ -188,7 +191,7 @@ for index, model_name in enumerate(models):
         root_causes = alerts_df["Root_Cause"].value_counts().reset_index()
         root_causes.columns = ["Root_Cause", "Count"]
         fig = px.bar(root_causes, x="Root_Cause", y="Count", title=model_name)
-        columns[index].plotly_chart(fig, width="stretch")
+        columns[index].plotly_chart(style_plotly_figure(fig), width="stretch")
     else:
         columns[index].info(f"No alerts for {model_name}.")
 
@@ -209,7 +212,7 @@ fig = px.histogram(
     nbins=30,
     barmode="overlay",
 )
-st.plotly_chart(fig, width="stretch")
+st.plotly_chart(style_plotly_figure(fig), width="stretch")
 
 st.divider()
 

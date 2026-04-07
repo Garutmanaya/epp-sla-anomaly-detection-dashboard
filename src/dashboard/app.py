@@ -2,19 +2,11 @@ import streamlit as st
 
 from dashboard.components.header import render_header
 from dashboard.components.inference_selector import render_inference_transport_selector
+from dashboard.theme import apply_theme, initialize_theme_state
 
 st.set_page_config(layout="wide")
-
-st.markdown(
-    """
-    <style>
-    [data-testid="stSidebarNav"] ul li:first-child {
-        display: none;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+initialize_theme_state()
+apply_theme()
 
 render_inference_transport_selector()
 render_header()
