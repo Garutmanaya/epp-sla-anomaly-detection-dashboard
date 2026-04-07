@@ -1,0 +1,21 @@
+[project]
+name = "epp-sla-anomaly-detection-dashboard"
+version = "0.1.0"
+description = "Standalone Streamlit UI for EPP SLA anomaly detection"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.42.82",
+    "mlflow>=3.10.1",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "plotly>=6.6.0",
+    "requests>=2.32.0",
+    "streamlit>=1.56.0",
+]
+
+[build-system]
+requires = ["setuptools>=65.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
