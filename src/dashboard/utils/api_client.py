@@ -1,4 +1,5 @@
 import json
+import os
 
 import boto3
 import requests
@@ -72,14 +73,44 @@ def check_backend_health(transport: str | None = None) -> bool:
     return check_fastapi_health()
 
 
+#def call_fastapi_inference(payload: dict) -> dict:
+#    settings = get_fastapi_settings()
+#    response = requests.post(
+#        build_api_url(settings.predict_path),
+#        json=payload,
+#        headers={"Content-Type": "application/json"},
+#        timeout=DEFAULT_TIMEOUT,
+#    )
+#    response.raise_for_status()
+#
+#    data = response.json()
+#    if "results" not in data:
+#        raise ValueError("Invalid response format: missing 'results'")
+#
+#    return data
+
 def call_fastapi_inference(payload: dict) -> dict:
     settings = get_fastapi_settings()
+
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        raise RuntimeError("Missing API_KEY environment variable")
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": api_key,   # ✅ THIS FIXES 403
+    }
+
     response = requests.post(
         build_api_url(settings.predict_path),
         json=payload,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         timeout=DEFAULT_TIMEOUT,
     )
+
+    if response.status_code == 403:
+        raise RuntimeError("Forbidden: API key missing or invalid")
+
     response.raise_for_status()
 
     data = response.json()
@@ -87,7 +118,6 @@ def call_fastapi_inference(payload: dict) -> dict:
         raise ValueError("Invalid response format: missing 'results'")
 
     return data
-
 
 def call_sagemaker_inference(payload: dict) -> dict:
     settings = get_sagemaker_settings()
