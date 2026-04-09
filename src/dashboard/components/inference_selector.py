@@ -11,8 +11,10 @@ from dashboard.theme import render_theme_selector
 
 def get_selected_transport() -> str:
     settings = get_inference_settings()
+
     if "inference_transport" not in st.session_state:
         st.session_state.inference_transport = settings.default_transport
+
     return st.session_state.inference_transport
 
 
@@ -24,6 +26,7 @@ def render_inference_transport_selector() -> str:
         st.session_state.inference_transport = settings.default_transport
 
     st.sidebar.subheader("🚀 Inference Route")
+
     st.sidebar.radio(
         "Choose backend",
         options=TRANSPORT_OPTIONS,
@@ -34,16 +37,20 @@ def render_inference_transport_selector() -> str:
     selected_transport = st.session_state.inference_transport
 
     if selected_transport == TRANSPORT_FASTAPI:
-        st.sidebar.caption(f"FastAPI URL: {settings.fastapi.base_url}{settings.fastapi.predict_path}")
+        st.sidebar.caption(
+            f"FastAPI: {settings.fastapi.base_url}{settings.fastapi.predict_path}"
+        )
     else:
         if settings.sagemaker.endpoint_name:
             st.sidebar.caption(
-                f"SageMaker endpoint: {settings.sagemaker.endpoint_name} ({settings.sagemaker.region_name})"
+                f"SageMaker: {settings.sagemaker.endpoint_name} ({settings.sagemaker.region_name})"
             )
         else:
-            st.sidebar.warning("Set SAGEMAKER_ENDPOINT_NAME to use direct SageMaker mode.")
+            st.sidebar.warning("Set SAGEMAKER_ENDPOINT_NAME")
 
     st.sidebar.divider()
+
+    # Theme selector stays global here
     render_theme_selector()
 
     return selected_transport
