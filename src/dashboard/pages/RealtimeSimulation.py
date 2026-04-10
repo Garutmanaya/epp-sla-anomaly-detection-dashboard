@@ -171,3 +171,12 @@ def render_realtime_simulation():
         st.dataframe(display_df, width="stretch")
     else:
         st.info("Waiting for first alert...")
+
+    tick = 1
+    if ns["running"]:
+        remaining = 1
+        if ns["current_interval"] > 0 and ns["last_update"]:
+            remaining = max(1, int(ns["current_interval"] - (time.time() - ns["last_update"])))
+
+        time.sleep(min(remaining, 1))
+        st.rerun()
