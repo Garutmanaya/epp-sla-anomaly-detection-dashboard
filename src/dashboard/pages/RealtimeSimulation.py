@@ -27,7 +27,7 @@ def render_realtime_simulation():
     st.subheader("🚨 Realtime Alert Simulation")
 
     # -------------------------
-    # Controls FIRST
+    # Controls
     # -------------------------
     controls = render_realtime_controls()
 
@@ -51,7 +51,7 @@ def render_realtime_simulation():
         reset_clicked = st.button("🔄 Reset", key="rt_reset")
 
     # -------------------------
-    # Handle Actions
+    # Reset
     # -------------------------
     if reset_clicked:
         ns.update({
@@ -64,8 +64,10 @@ def render_realtime_simulation():
         })
         st.rerun()
 
+    # -------------------------
+    # Start Simulation
+    # -------------------------
     if start_clicked:
-        # Generate + infer ONCE
         df = generate_test_data(
             start_date=pd.Timestamp("2026-05-01"),
             hours=controls["num_records"] // 2,
@@ -96,7 +98,7 @@ def render_realtime_simulation():
     results = ns["results"]
 
     # -------------------------
-    # Status Panel
+    # No Data Yet
     # -------------------------
     if results is None:
         st.info("👉 Click Start to begin simulation.")
@@ -105,36 +107,36 @@ def render_realtime_simulation():
     total = len(results)
     processed = ns["pointer"]
 
-    status = "Running" if ns["running"] else "Paused"
-
-    s1, s2, s3 = st.columns(3)
-    s1.metric("Status", status)
-    s2.metric("Processed", f"{processed} / {total}")
-    s3.metric("Interval (sec)", int(ns["current_interval"]))
-
     # -------------------------
-    # Interval Logic
+    # Interval Logic (FIXED)
     # -------------------------
     now = time.time()
 
     if ns["running"] and processed < total:
 
-        # Determine interval
-        if controls["interval_mode"] == "Fixed":
-            interval = controls["interval_seconds"]
-        else:
-            interval = random.randint(controls["random_min"], controls["random_max"])
-
-        ns["current_interval"] = interval
-
-        if ns["last_update"] is None:
+        # 🚀 First record immediately
+        if ns["pointer"] == 0:
+            ns["pointer"] = 1
             ns["last_update"] = now
+            st.rerun()
+
+        # ✅ Set interval once per cycle
+        if ns["current_interval"] == 0:
+            if controls["interval_mode"] == "Fixed":
+                ns["current_interval"] = controls["interval_seconds"]
+            else:
+                ns["current_interval"] = random.randint(
+                    controls["random_min"],
+                    controls["random_max"]
+                )
+
+        interval = ns["current_interval"]
 
         if now - ns["last_update"] >= interval:
             ns["pointer"] += 1
             ns["last_update"] = now
+            ns["current_interval"] = 0  # reset for next cycle
 
-            # Alert feedback
             latest_row = results.iloc[ns["pointer"] - 1]
             if latest_row["Status"] != NORMAL_STATUS:
                 st.toast("🚨 New Alert!", icon="⚠️")
@@ -142,14 +144,27 @@ def render_realtime_simulation():
             st.rerun()
 
     # -------------------------
-    # Display Data (latest first)
+    # Status Panel
+    # -------------------------
+    status = "Running" if ns["running"] else "Paused"
+
+    remaining = 0
+    if ns["current_interval"] > 0 and ns["last_update"]:
+        remaining = max(0, int(ns["current_interval"] - (now - ns["last_update"])))
+
+    s1, s2, s3, s4 = st.columns(4)
+    s1.metric("Status", status)
+    s2.metric("Processed", f"{processed} / {total}")
+    s3.metric("Interval (sec)", int(ns["current_interval"]))
+    s4.metric("Next Alert In", f"{remaining}s")
+
+    # -------------------------
+    # Display Data
     # -------------------------
     display_df = results.head(ns["pointer"]).copy()
 
     if not display_df.empty:
         display_df = display_df.sort_values("Timestamp", ascending=False)
-
-        # Limit rows
         display_df = display_df.head(controls["max_rows"])
 
         st.subheader("📡 Live Alerts")

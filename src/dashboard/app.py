@@ -89,11 +89,17 @@ if st.session_state.page == "home":
         if st.button("⏱️ Realtime Simulation"):
             st.session_state.page = "realtime"
    
+    
     st.markdown("""
-    ### Dashboards Summary
+    ### 📊 Dashboards Overview
 
-    - 📊 **Single Model** → Analyze one model  
-    - 🧠 **Compare Models** → Compare multiple models  
+    - 📊 **Single Model** → Deep dive into a single model’s behavior with alert analysis, performance metrics, and root cause insights  
+
+    - 🧠 **Compare Models** → Compare multiple models to understand performance differences, agreement patterns, and alert distribution  
+
+    - 📈 **MLflow Metrics** → Track experiments, monitor model performance over time, and review training, validation, and threshold runs  
+
+    - ⏱️ **Realtime Simulation** → Experience live alert streaming with configurable intervals to simulate real-world anomaly detection scenarios  
 
     ---
     """)
