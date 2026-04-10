@@ -13,6 +13,43 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+
+/* Global font size */
+html, body, [class*="css"] {
+    font-size: 13px;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] * {
+    font-size: 12px !important;
+}
+
+/* Buttons */
+button {
+    font-size: 12px !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* Headers */
+h1 { font-size: 20px !important; }
+h2 { font-size: 18px !important; }
+h3 { font-size: 16px !important; }
+
+/* Metrics */
+[data-testid="stMetric"] {
+    font-size: 12px;
+}
+
+/* Dataframe text */
+[data-testid="stDataFrame"] {
+    font-size: 12px;
+}
+
+</style>
+""", unsafe_allow_html=True)
 # -------------------------
 # Global State
 # -------------------------
@@ -34,7 +71,7 @@ if st.session_state.page == "home":
 
     st.markdown("### Available Dashboards")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         if st.button("📊 Single Model"):
@@ -48,7 +85,9 @@ if st.session_state.page == "home":
         if st.button("📈 MLflow Metrics"):
             st.session_state.page = "mlflow" 
 
-
+    with col4:
+        if st.button("⏱️ Realtime Simulation"):
+            st.session_state.page = "realtime"
    
     st.markdown("""
     ### Dashboards Summary
@@ -72,5 +111,9 @@ elif st.session_state.page == "compare":
     render_compare_model()
 
 elif st.session_state.page == "mlflow":
-    st.subheader("📈 MLflow Metrics")
-    st.info("Implement MLflow dashboard here")
+    from dashboard.pages.MLflow_Metrics import render_mlflow_metrics
+    render_mlflow_metrics()
+
+elif st.session_state.page == "realtime":
+    from dashboard.pages.RealtimeSimulation import render_realtime_simulation
+    render_realtime_simulation()

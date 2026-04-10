@@ -12,42 +12,22 @@ def render_single_model():
     from shared.demo_data import generate_test_data
 
     # -------------------------
-    # Init state
+    # Namespaced State
     # -------------------------
-    defaults = {
-        "single_df": None,
-        "single_results": None,
-        "single_meta": {},
-        "single_last_model": None,
-        "single_last_transport": None,
-    }
-    for k, v in defaults.items():
-        st.session_state.setdefault(k, v)
+    ns = st.session_state.setdefault("single", {
+        "df": None,
+        "results": None,
+        "meta": {},
+        "last_model": None,
+        "last_transport": None,
+    })
 
     transport = st.session_state.get("inference_transport", "fastapi")
 
     st.subheader("🚨 Single Model Inference & Analysis")
 
     # -------------------------
-    # 🔥 TOP ACTION BAR (NEW)
-    # -------------------------
-    col1, col2, col3 = st.columns([1, 2, 2])
-
-    with col1:
-        if st.button("⬅ Back", key="single_back"):
-            st.session_state.page = "home"
-
-    with col2:
-        generate_clicked = st.button("🧪 Generate Data", key="single_generate_btn")
-
-    with col3:
-        run_clicked = st.button(
-            "🚀 Run Analysis",
-            key="single_run_btn",
-            disabled=st.session_state.get("single_df") is None
-        )
-    # -------------------------
-    # Controls (sidebar only inputs)
+    # Controls FIRST (important for file)
     # -------------------------
     controls = render_single_controls()
 
@@ -60,33 +40,83 @@ def render_single_model():
     selected_status = controls["selected_status"]
 
     # -------------------------
+    # 🔥 TOP ACTION BAR
+    # -------------------------
+    col1, col2, col3, col4 = st.columns([1, 6, 2, 2])
+
+    with col1:
+      
+        if st.button("⬅ Home", key="single_back"):
+            st.session_state.page = "home"
+            st.rerun()
+
+    with col3:
+        generate_clicked = st.button("🧪 Generate Data", key="single_generate_btn")
+
+    data_exists = (
+        ns["df"] is not None
+        or generate_clicked
+        or file is not None
+    )
+
+    with col4:
+        run_clicked = st.button(
+            "🚀 Run Analysis",
+            key="single_run_btn",
+            disabled=not data_exists
+        )
+
+    # -------------------------
     # Data Input
     # -------------------------
     if mode == "Generate Data":
         if generate_clicked:
-            st.session_state.single_df = generate_test_data(
+            ns["df"] = generate_test_data(
                 start_date=pd.Timestamp("2026-05-01"),
                 hours=hours,
                 anomaly_prob=prob,
             )
-            st.session_state.single_results = None
+            ns["results"] = None
+            ns["meta"] = {}
+            ns["last_model"] = None
+            ns["last_transport"] = None
 
     elif mode == "Upload CSV":
         if file:
             try:
-                st.session_state.single_df = load_uploaded_csv(file)
-                st.session_state.single_results = None
+                ns["df"] = load_uploaded_csv(file)
+                ns["results"] = None
+                ns["meta"] = {}
+                ns["last_model"] = None
+                ns["last_transport"] = None
             except Exception as e:
                 st.error(f"CSV error: {e}")
 
-    df = st.session_state.single_df
-
-    if df is None:
-        st.info("Generate or upload data to begin.")
-        return
+    df = ns["df"]
 
     # -------------------------
-    # Run (BEFORE preview)
+    # UX Guidance
+    # -------------------------
+    #if df is None:
+    #    st.info("👉 Step 1: Generate data or upload CSV to begin.")
+    #    return
+    #elif ns["results"] is None:
+    #    st.success("✅ Data ready. Click 'Run Analysis' to proceed.")
+
+
+    # -------------------------
+    # UX Guidance (FIXED)
+    # -------------------------
+    if df is None:
+        st.info("👉 Step 1: Generate data or upload CSV to begin.")
+        return
+
+    # Only show "ready" BEFORE run is clicked
+    if ns["results"] is None and not run_clicked:
+        st.success("✅ Data ready. Click 'Run Analysis' to proceed.")
+
+    # -------------------------
+    # Run
     # -------------------------
     if run_clicked:
         payload = build_inference_payload(df, [model])
@@ -98,20 +128,32 @@ def render_single_model():
             st.error(f"Inference failed: {e}")
             return
 
-        st.session_state.single_results = pd.DataFrame(response["results"][model])
-        st.session_state.single_meta = response["metadata"].get(model, {})
+        ns["results"] = pd.DataFrame(response["results"][model])
+        ns["meta"] = response["metadata"].get(model, {})
+        ns["last_model"] = model
+        ns["last_transport"] = transport
 
     # -------------------------
     # Preview ONLY before results
     # -------------------------
-    if st.session_state.single_results is None:
+    if ns["results"] is None:
         st.subheader("📄 Input Data Preview")
         st.dataframe(df.head(50), width="stretch")
-        st.info("Click Run Analysis.")
         return
 
-    results = st.session_state.single_results.copy()
-    meta = st.session_state.single_meta
+    # -------------------------
+    # Validation checks
+    # -------------------------
+    if ns["last_model"] != model:
+        st.info("Model changed. Run again.")
+        return
+
+    if ns["last_transport"] != transport:
+        st.info("Transport changed. Run again.")
+        return
+
+    results = ns["results"].copy()
+    meta = ns["meta"]
 
     # -------------------------
     # Filters

@@ -17,46 +17,24 @@ def render_compare_model():
     from shared.demo_data import generate_test_data
 
     # -------------------------
-    # Init state
+    # Namespaced State
     # -------------------------
-    defaults = {
-        "compare_df": None,
-        "compare_results": None,
-        "compare_metadata": {},
-        "compare_models_used": [],
-        "compare_transport_used": None,
-    }
-    for k, v in defaults.items():
-        st.session_state.setdefault(k, v)
+    ns = st.session_state.setdefault("compare", {
+        "df": None,
+        "results": None,
+        "metadata": {},
+        "models_used": [],
+        "transport_used": None,
+    })
 
     transport = st.session_state.get("inference_transport", "fastapi")
 
     st.subheader("🧠 Advanced Model Comparison")
 
     # -------------------------
-    # 🔥 TOP ACTION BAR (NEW)
-    # -------------------------
-    col1, col2, col3 = st.columns([1, 2, 2])
-
-    with col1:
-        if st.button("⬅ Back", key="compare_back"):
-            st.session_state.page = "home"
-
-    with col2:
-        generate_clicked = st.button("🧪 Generate Data", key="compare_generate_btn")
-
-    with col3:
-        run_clicked = st.button(
-            "🚀 Run Analysis",
-            key="compare_run_btn",
-            disabled=st.session_state.get("compare_df") is None
-        )
-
-    # -------------------------
-    # Controls (sidebar inputs only)
+    # Controls FIRST (defines `file`)
     # -------------------------
     controls = render_compare_controls()
-
     models = controls["models"]
     mode = controls["mode"]
     hours = controls["hours"]
@@ -64,30 +42,74 @@ def render_compare_model():
     file = controls["file"]
 
     # -------------------------
+    # 🔥 TOP ACTION BAR
+    # -------------------------
+    col1, col2, col3, col4 = st.columns([1, 6, 2, 2])
+
+    with col1:
+        if st.button("⬅ Home", key="compare_back"):
+            st.session_state.page = "home"
+            st.rerun()
+    with col3:
+        generate_clicked = st.button("🧪 Generate Data", key="compare_generate_btn")
+
+    # derive availability using current click + namespace
+    data_exists = (ns["df"] is not None) or generate_clicked or (file is not None)
+
+    with col4:
+        run_clicked = st.button(
+            "🚀 Run Analysis",
+            key="compare_run_btn",
+            disabled=not data_exists
+        )
+
+    # -------------------------
     # Data Input
     # -------------------------
     if mode == "Generate Data":
         if generate_clicked:
-            st.session_state.compare_df = generate_test_data(
+            ns["df"] = generate_test_data(
                 start_date=pd.Timestamp("2026-05-01"),
                 hours=hours,
                 anomaly_prob=prob,
             )
-            st.session_state.compare_results = None
+            ns["results"] = None
+            ns["metadata"] = {}
+            ns["models_used"] = []
+            ns["transport_used"] = None
 
     elif mode == "Upload CSV":
         if file:
             try:
-                st.session_state.compare_df = load_uploaded_csv(file)
-                st.session_state.compare_results = None
+                ns["df"] = load_uploaded_csv(file)
+                ns["results"] = None
+                ns["metadata"] = {}
+                ns["models_used"] = []
+                ns["transport_used"] = None
             except Exception as e:
                 st.error(f"CSV error: {e}")
 
-    df = st.session_state.compare_df
+    df = ns["df"]
 
+    # -------------------------
+    # UX Guidance
+    # -------------------------
+    #if df is None:
+    #    st.info("👉 Step 1: Generate data or upload CSV to begin.")
+    #    return
+    #elif ns["results"] is None:
+    #    st.success("✅ Data ready. Click 'Run Analysis' to proceed.")
+
+    # -------------------------
+    # UX Guidance (FIXED)
+    # -------------------------
     if df is None:
-        st.warning("Generate or upload data")
+        st.info("👉 Step 1: Generate data or upload CSV to begin.")
         return
+
+    # Only show "ready" BEFORE run is clicked
+    if ns["results"] is None and not run_clicked:
+        st.success("✅ Data ready. Click 'Run Analysis' to proceed.")
 
     # -------------------------
     # Run (BEFORE preview)
@@ -106,32 +128,34 @@ def render_compare_model():
             st.error(f"Inference failed: {e}")
             return
 
-        st.session_state.compare_results = {
+        ns["results"] = {
             m: pd.DataFrame(response["results"][m]) for m in models
         }
-        st.session_state.compare_metadata = response["metadata"]
-        st.session_state.compare_models_used = list(models)
-        st.session_state.compare_transport_used = transport
+        ns["metadata"] = response["metadata"]
+        ns["models_used"] = list(models)
+        ns["transport_used"] = transport
 
     # -------------------------
     # Preview ONLY before results
     # -------------------------
-    if st.session_state.compare_results is None:
+    if ns["results"] is None:
         st.subheader("📄 Input Data Preview")
         st.dataframe(df.head(50), width="stretch")
-        st.info("Click Run Analysis.")
         return
 
-    if st.session_state.compare_models_used != models:
+    # -------------------------
+    # Validation checks
+    # -------------------------
+    if ns["models_used"] != models:
         st.info("Model changed. Run again.")
         return
 
-    if st.session_state.compare_transport_used != transport:
+    if ns["transport_used"] != transport:
         st.info("Transport changed. Run again.")
         return
 
-    results = st.session_state.compare_results
-    metadata = st.session_state.compare_metadata
+    results = ns["results"]
+    metadata = ns["metadata"]
 
     # -------------------------
     # KPIs
