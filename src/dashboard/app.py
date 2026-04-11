@@ -102,6 +102,12 @@ if st.session_state.page == "home":
     - ⏱️ **Realtime Simulation** → Experience live alert streaming with configurable intervals to simulate real-world anomaly detection scenarios  
 
     ---
+
+    ### 🏗️ Architecture
+
+    Streamlit UI → API Gateway → AWS Lambda → SageMaker Serverless → Docker (FastAPI + Models)
+
+    ---
     """)
 
 
